@@ -1,7 +1,9 @@
 from pathlib import Path
 
+import lightning as L
 import torch
 import yaml
+from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 
 from data import (
     get_dataloader,
@@ -11,6 +13,7 @@ from data import (
     train_test_split,
 )
 from engine import train
+from lightning_engine import LitTransformer
 from model import TransformerDecoderModel
 from util import get_device, save_model, seed_everything
 
@@ -48,32 +51,43 @@ if __name__ == "__main__":
 
     # Build model
     seed_everything(config["seed"])
-    model = TransformerDecoderModel(
-        vocab_size=len(vocab),
-        block_size=block_size,
-        n_layers=n_layers,
-        n_heads=n_heads,
-        head_size=head_size,
-        dropout=dropout,
-        embed_size=embed_size,
+    device = get_device()
+    trainer = L.Trainer(
+        max_steps=train_steps,
+        limit_train_batches=train_steps,
+        limit_val_batches=eval_steps,
+        val_check_interval=eval_steps,
+        deterministic=True,
+        logger=True,
+        callbacks=[EarlyStopping(monitor="val_loss", mode="min", patience=3)],
+        precision="16",
+        accelerator=device,
     )
 
-    # Train model
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-    loss_fn = torch.nn.CrossEntropyLoss()
-    device = get_device()
-    train(
-        model=model,
-        optimizer=optimizer,
-        loss_fn=loss_fn,
-        train_data_loader=train_data_loader,
-        test_data_loader=test_data_loader,
-        train_steps=train_steps,
-        log_interval=log_interval,
-        eval_steps=eval_steps,
-        device=device,
+    with trainer.init_module():
+        model = TransformerDecoderModel(
+            vocab_size=len(vocab),
+            block_size=block_size,
+            n_layers=n_layers,
+            n_heads=n_heads,
+            head_size=head_size,
+            dropout=dropout,
+            embed_size=embed_size,
+        )
+
+        # Initialize LightningModule
+        optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+        loss_fn = torch.nn.CrossEntropyLoss()
+        lit_model = LitTransformer(model, loss_fn, optimizer)
+
+    trainer.fit(
+        model=lit_model,
+        train_dataloaders=train_data_loader,
+        val_dataloaders=test_data_loader,
     )
+
+    device = get_device()
 
     # Save model
-    save_model(model, save_path)
+    save_model(lit_model.model, save_path)
     print(f"Saved model to {save_path}")

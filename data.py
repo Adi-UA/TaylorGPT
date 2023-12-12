@@ -4,6 +4,7 @@ from pathlib import PosixPath
 import dotenv
 import torch
 from lyricsgenius import Genius
+from torch.utils.data import DataLoader, Dataset
 
 # Load the environment variables
 dotenv.load_dotenv()
@@ -13,10 +14,14 @@ GENIUS_API_TOKEN = os.getenv("GENIUS_API_TOKEN")
 ARTIST_NAME = "Taylor Swift"
 N_SONGS = 200
 DATA_DIR = PosixPath(__file__).parent / "data"
-DATA_PATH = DATA_DIR / "raw_taylor_swift_lyrics.txt"
+RAW_DATA_PATH = DATA_DIR / "raw_taylor_swift_lyrics.txt"
+DATA_PATH = DATA_DIR / "taylor_swift_lyrics.txt"
 VOCAB_PATH = DATA_DIR / "vocab.txt"
 
 
+####################
+# Helper functions #
+####################
 def download_data():
     # Create the data directory if it doesn't exist
     DATA_DIR.mkdir(parents=True, exist_ok=True)
@@ -34,7 +39,7 @@ def download_data():
 
     # Save the data
     print(f"Saving data to {DATA_PATH}")
-    with open(DATA_PATH, "w") as f:
+    with open(RAW_DATA_PATH, "w") as f:
         for song in artist.songs:
             lyrics = song.lyrics
 
@@ -95,6 +100,38 @@ def get_encoder_decoder_fn(vocab):
     decoder = lambda t: "".join([idx_to_char[idx] for idx in t])
 
     return encoder, decoder
+
+
+######################
+# Dataset and Dataloader #
+######################
+class CustomDataset(Dataset):
+    def __init__(self, encoded_data, block_size):
+        self.data = encoded_data
+        self.block_size = block_size
+
+    def __len__(self):
+        return len(self.data) - self.block_size
+
+    def __getitem__(self, idx):
+        x = self.data[idx : idx + self.block_size]
+        y = self.data[idx + 1 : idx + self.block_size + 1]
+        return x, y
+
+
+def get_dataloader(encoded_data, block_size, batch_size, shuffle):
+    dataset = CustomDataset(encoded_data, block_size)
+    num_workers = os.cpu_count()
+    dataloader = DataLoader(
+        dataset,
+        batch_size=batch_size,
+        shuffle=shuffle,
+        drop_last=True,
+        num_workers=num_workers,
+        pin_memory=True,
+        persistent_workers=True,
+    )
+    return dataloader
 
 
 if __name__ == "__main__":
