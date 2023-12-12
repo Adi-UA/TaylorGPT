@@ -1,4 +1,4 @@
-train_steps: 3000
+train_steps: 2000
 batch_size: 64
 embed_size: 128
 n_heads: 6
