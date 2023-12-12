@@ -11,4 +11,4 @@ log_interval: 250
 eval_epochs: 50
 seed: 42
 save_path: models/model.pt
-save_interval: 50
+save_interval: 250

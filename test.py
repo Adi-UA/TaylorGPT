@@ -22,7 +22,7 @@ if __name__ == "__main__":
     n_layers = config["n_layers"]
     dropout = config["dropout"]
     embed_size = config["embed_size"]
-    save_path = Path("models/model_500.pt")
+    save_path = config["save_path"]
 
     vocab = load_vocab()
     (
@@ -48,7 +48,7 @@ if __name__ == "__main__":
     model.eval()
     with torch.inference_mode():
         x = torch.zeros((1, 1), dtype=torch.long, device=device)
-        out = model.generate(x, 250)[0].tolist()
+        out = model.generate(x, 500)[0].tolist()
         print("Generated text:")
         print("=" * 20)
         print(decode(out).strip())
