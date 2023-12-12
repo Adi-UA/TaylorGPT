@@ -1,6 +1,6 @@
 # TaylorGPT
 
-A transformer decoder model for generating Taylor Swift lyrics built from scratch using PyTorch including implementations for masking, multi-head attention and transformer blocks.
+A 14 million parameter transformer decoder model for generating Taylor Swift lyrics built from scratch using PyTorch including implementations for masking, multi-head attention, and transformer blocks.
 
 The model is trained on a dataset of 200 song lyrics from Taylor Swift's discography.
 
