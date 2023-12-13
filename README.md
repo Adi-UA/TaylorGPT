@@ -110,7 +110,7 @@ Don't have this of tick, oh-oh
 A meminole (Oh, oh-oh), their pride secret in the men way instead to
 ```
 
-Clearly, the model significantly improves after training for just 8 minutes.
+Clearly, the model significantly improves after training for just 8 minutes. Since the model uses character level tokens, it appears that after only 8 minutes of training, the model has learned to both form words and spell them correctly. The structure of the output text also looks very similar to verses.
 
 ### Loss
 
